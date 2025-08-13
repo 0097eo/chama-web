@@ -1,8 +1,13 @@
 import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import axios, { isAxiosError } from 'axios'; // Import the isAxiosError type guard
+import axios, { isAxiosError } from 'axios';
 
 export const authConfig = {
+  // --- ADD THIS LINE ---
+  // Explicitly tell NextAuth.js to use the JWT session strategy.
+  // This is required for the callbacks to work correctly with a Credentials provider.
+  session: { strategy: "jwt" },
+
   pages: {
     signIn: '/login',
   },
@@ -31,8 +36,6 @@ export const authConfig = {
           }
           return null;
         } catch (error) {
-          // --- THE FIX ---
-          // Use the isAxiosError type guard to safely access response data
           if (isAxiosError(error)) {
             console.error("Login Error:", error.response?.data);
           } else {
@@ -57,4 +60,8 @@ export const authConfig = {
       return session;
     },
   },
+  // The 'secret' property is automatically read from the AUTH_SECRET
+  // environment variable, so you don't need to explicitly add it here,
+  // but this is where it would go if you named your variable something else.
+  // secret: process.env.AUTH_SECRET,
 } satisfies NextAuthConfig;
