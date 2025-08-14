@@ -41,7 +41,9 @@ export interface Chama {
   name: string;
   description: string | null;
   monthlyContribution: number;
+  totalMembers: number;
   members: Membership[];
+  meetingDay: string;
   // Add other fields as needed
 }
 
@@ -59,4 +61,31 @@ export interface Contribution {
   // Add other fields as needed
 }
 
-// Add other types for Loan, Meeting, File, etc. as you build those features.
+// Dashboard Types
+export interface ChamaDashboardStats {
+  totalContributionsThisYear: number;
+  activeLoansCount: number;
+  totalLoanAmountActive: number;
+  totalMembers: number;
+}
+
+// Audit Log Types
+export interface AuditLog {
+  id: string;
+  action: string;
+  createdAt: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  target: {
+    email: string;
+  } | null;
+  chama: {
+    name: string;
+  } | null;
+
+
+}
+  // Add other fields as needed

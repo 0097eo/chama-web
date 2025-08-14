@@ -49,7 +49,7 @@ export function Header() {
                 <Skeleton className="h-10 w-10 rounded-full" />
               ) : (
                 <AvatarFallback>
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                  {user?.firstName?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               )}
             </Avatar>

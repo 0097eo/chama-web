@@ -1,21 +1,31 @@
-/* eslint-disable react/no-unescaped-entities */
+
 "use client";
 
+import { useState, useEffect } from "react";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { Separator } from "@/components/ui/separator";
-import { useGetChamas } from "@/hooks/useChamas"; // Assuming you created this hook
+import { useGetChamas } from "@/hooks/useChamas";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ChamaSelector } from "@/components/chamas/ChamaSelector";
 
 export default function DashboardPage() {
-  // TODO - Replace with your actual hook.
-  const { data: chamas, isLoading } = useGetChamas() || { data: [{ id: "mock-chama-id", name: "My Primary Chama" }], isLoading: false };
-  
-  // TODO A real app would have a chama selector. For now, we use the first one.
-  const activeChama = chamas?.[0];
+  const { data: chamas, isLoading } = useGetChamas();
+  const [selectedChamaId, setSelectedChamaId] = useState<string | null>(null);
+
+  // Auto-select the first chama when chamas are loaded (optional)
+  useEffect(() => {
+    if (chamas && chamas.length > 0 && !selectedChamaId) {
+      setSelectedChamaId(chamas[0].id);
+    }
+  }, [chamas, selectedChamaId]);
+
+  const activeChama = chamas?.find(chama => chama.id === selectedChamaId);
 
   if (isLoading) {
     return (
@@ -30,13 +40,16 @@ export default function DashboardPage() {
     );
   }
 
-  if (!activeChama) {
+  if (!chamas || chamas.length === 0) {
     return (
       <Alert>
         <Terminal className="h-4 w-4" />
         <AlertTitle>Welcome!</AlertTitle>
-        <AlertDescription>
+        <AlertDescription className="flex justify-between items-center">
           You are not yet a member of any chama. You can create one or ask for an invitation.
+          <Button asChild className="ml-4">
+            <Link href="/dashboard/chamas/create">Create a Chama</Link>
+          </Button>
         </AlertDescription>
       </Alert>
     );
@@ -44,24 +57,62 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Dashboard for {activeChama.name}
-        </h1>
-        <p className="text-muted-foreground">
-          Here's an overview of your chama's current status.
-        </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-muted-foreground">
+            Select a chama to view its current status and manage activities.
+          </p>
+        </div>
+        
+        <div className="w-full md:w-[400px]">
+          <ChamaSelector
+            chamas={chamas}
+            selectedChamaId={selectedChamaId}
+            onSelectChama={setSelectedChamaId}
+          />
+        </div>
       </div>
-      
-      <StatsCards chamaId={activeChama.id} />
 
-      <Separator />
+      {activeChama ? (
+        <>
+          <div className="rounded-lg border p-4 bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{activeChama.name}</h2>
+                {activeChama.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {activeChama.description}
+                  </p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Monthly Contribution</p>
+                <p className="text-lg font-semibold">
+                  KSH {activeChama.monthlyContribution.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
 
-      <QuickActions chamaId={activeChama.id} />
-      
-      <div className="mt-8">
-        <RecentActivity chamaId={activeChama.id} />
-      </div>
+          <StatsCards chamaId={activeChama.id} />
+
+          <Separator />
+
+          <QuickActions chamaId={activeChama.id} />
+          
+          <div className="mt-8">
+            <RecentActivity chamaId={activeChama.id} />
+          </div>
+        </>
+      ) : (
+        <Alert>
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>No Chama Selected</AlertTitle>
+          <AlertDescription>
+            Please select a chama from the dropdown above to view its dashboard.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

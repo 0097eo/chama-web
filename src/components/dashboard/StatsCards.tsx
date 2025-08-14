@@ -2,31 +2,18 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useGetDashboardStats } from "@/hooks/useDashboard";
 import { DollarSign, Users, PiggyBank, HandCoins } from "lucide-react";
 
-// TODO This would be a hook that calls your API: `GET /api/chamas/:chamaId/dashboard`
-// For now, we'll use mock data and a loading state.
-const useChamaDashboard = (chamaId: string) => {
-  // TODO  Replace with a real Tanstack Query hook
-  return {
-    data: {
-        totalContributionsThisYear: 125000,
-        activeLoansCount: 3,
-        totalLoanAmountActive: 45000,
-        totalMembers: 12,
-    },
-    isLoading: false,
-  }
-}
-
 export function StatsCards({ chamaId }: { chamaId: string }) {
-  const { data, isLoading } = useChamaDashboard(chamaId);
+
+  const { data, isLoading } = useGetDashboardStats(chamaId);
 
   const stats = [
-    { title: "Total Contributions (Year)", value: `KSH ${data?.totalContributionsThisYear.toLocaleString()}`, icon: PiggyBank },
-    { title: "Active Loans", value: data?.activeLoansCount, icon: HandCoins },
-    { title: "Loan Principal Out", value: `KSH ${data?.totalLoanAmountActive.toLocaleString()}`, icon: DollarSign },
-    { title: "Total Members", value: data?.totalMembers, icon: Users },
+    { title: "Total Contributions (Year)", value: `KSH ${data?.totalContributionsThisYear?.toLocaleString() || 0}`, icon: PiggyBank },
+    { title: "Active Loans", value: data?.activeLoansCount || 0, icon: HandCoins },
+    { title: "Loan Principal Out", value: `KSH ${data?.totalLoanAmountActive?.toLocaleString() || 0}`, icon: DollarSign },
+    { title: "Total Members", value: data?.totalMembers || 0, icon: Users },
   ];
 
   if (isLoading) {
