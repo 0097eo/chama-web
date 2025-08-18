@@ -58,6 +58,12 @@ export interface Contribution {
   status: ContributionStatus;
   paidAt: string | null;
   membershipId: string;
+  membership: {
+      user: {
+          firstName: string;
+          lastName: string;
+      }
+  };
   // Add other fields as needed
 }
 

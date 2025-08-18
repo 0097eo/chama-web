@@ -23,7 +23,7 @@ export function ChamaCard({ chama }: ChamaCardProps) {
       </CardContent>
       <CardFooter>
         <Button asChild className="w-full">
-          <Link href={`/dashboard/chamas/${chama.id}`}>Manage Chama</Link>
+          <Link href={`/dashboard/chamas/${chama.id}`}>Detailed View</Link>
         </Button>
       </CardFooter>
     </Card>

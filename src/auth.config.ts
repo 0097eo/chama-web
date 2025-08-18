@@ -49,11 +49,11 @@ export const authConfig = {
 
           const profile = profileResponse.data.data;
 
-          // Add the profile data to the token
           token.id = profile.id;
           token.firstName = profile.firstName;
           token.lastName = profile.lastName;
           token.role = profile.role;
+          token.phone = profile.phone || '';
 
         } catch (fetchError) {
           console.error("Failed to fetch user profile for token:", fetchError);
@@ -71,6 +71,7 @@ export const authConfig = {
         session.user.firstName = token.firstName;
         session.user.lastName = token.lastName;
         session.user.role = token.role;
+        session.user.phone = token.phone || '';
       }
       
       return session;
