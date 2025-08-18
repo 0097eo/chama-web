@@ -50,6 +50,16 @@ const getDefaulters = async (chamaId: string): Promise<Membership[]> => {
     return response.data.data;
 };
 
+// POST /api/contributions/bulk-import/:chamaId
+const bulkImportContributions = async ({ chamaId, file }: { chamaId: string, file: File }): Promise<any> => {
+    const formData = new FormData();
+    formData.append("contributionsFile", file);
+
+    const response = await api.post(`/contributions/bulk-import/${chamaId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+};
 
 // === React Query Hooks ===
 
@@ -92,5 +102,20 @@ export const useGetDefaulters = (chamaId: string) => {
         queryKey: ['defaulters', chamaId],
         queryFn: () => getDefaulters(chamaId),
         enabled: !!chamaId,
+    });
+};
+
+export const useBulkImportContributions = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: bulkImportContributions,
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['contributions', variables.chamaId] });
+            queryClient.invalidateQueries({ queryKey: ['defaulters', variables.chamaId] });
+            toast.success(`Bulk import successful! ${data.data.createdCount} records created.`);
+        },
+        onError: (error: AxiosError<{ message: string }>) => {
+            toast.error(error.response?.data?.message || 'Bulk import failed.');
+        }
     });
 };

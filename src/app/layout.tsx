@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Chama App",
+  title: "ChamaSmart",
   description: "Your modern chama management platform.",
 };
 

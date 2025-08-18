@@ -20,7 +20,7 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 border-r bg-background">
       <div className="p-6 border-b h-14 flex items-center justify-center">
-        <h1 className="text-2xl font-bold">Chama App</h1>
+        <h1 className="text-2xl font-bold">ChamaSmart</h1>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">

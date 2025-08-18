@@ -26,7 +26,7 @@ export function MobileNav() {
       <SheetContent side="left">
         <nav className="grid gap-6 text-lg font-medium">
           <Link href="#" className="flex items-center gap-2 text-lg font-semibold">
-            <span>Chama App</span>
+            <span>ChamaSmart</span>
           </Link>
           {navLinks.map((link) => (
             <Link
