@@ -60,8 +60,8 @@ export interface Contribution {
       }
   };
 }
-// Loan Types
 
+// Loan Types
 export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'PAID' | 'DEFAULTED';
 
 export interface LoanPayment {
@@ -87,6 +87,62 @@ export interface Loan {
     membershipId: string;
     membership: Membership;
     payments: LoanPayment[];
+}
+
+// Reports Types
+
+export interface FinancialSummary {
+    totalContributions: number;
+    totalPenalties: number;
+    totalLoansDisbursed: number;
+    totalLoanRepayments: number;
+    outstandingLoanPrincipal: number;
+    netPosition: number;
+}
+
+// This can reuse the generic PaginatedResponse
+export type ContributionsReport = PaginatedResponse<Contribution>;
+
+export interface LoanPortfolioReport {
+    totalPrincipalDisbursed: number;
+    totalRepayments: number;
+    statusBreakdown: {
+        status: LoanStatus;
+        count: number;
+        totalAmount: number;
+    }[];
+}
+
+
+export interface MemberPerformanceData {
+  id: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  _count: {
+    contributions: number;
+    loans: number;
+  };
+  contributions: {
+    amount: number;
+  }[];
+  loans: {
+    amount: number;
+    status: LoanStatus;
+  }[];
+}
+
+export interface ProcessedMemberPerformance {
+  membershipId: string;
+  name: string;
+  email: string;
+  totalContributions: number;
+  contributionCount: number;
+  totalLoanPrincipal: number;
+  loanCount: number;
+  activeLoansCount: number;
 }
 
 
