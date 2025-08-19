@@ -6,7 +6,7 @@ export default function HomePage() {
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 text-center p-8">
       <div className="space-y-4">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-800 dark:text-white">
-          Welcome to Chama-Web
+          Welcome to ChamaSmart
         </h1>
         <p className="max-w-xl text-lg text-gray-600 dark:text-gray-300">
           The modern, secure, and easy-to-use platform for managing your chama's finances, loans, and meetings.

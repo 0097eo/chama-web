@@ -21,11 +21,6 @@ export interface User {
   createdAt: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-}
-
 // Chama and Membership Types
 export type MembershipRole = 'ADMIN' | 'TREASURER' | 'SECRETARY' | 'MEMBER';
 
@@ -33,7 +28,8 @@ export interface Membership {
   id: string;
   role: MembershipRole;
   isActive: boolean;
-  user: Pick<User, 'id' | 'firstName' | 'lastName' | 'email'>;
+  user: Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'phone'>;
+  chamaId: string;
 }
 
 export interface Chama {
@@ -44,7 +40,6 @@ export interface Chama {
   totalMembers: number;
   members: Membership[];
   meetingDay: string;
-  // Add other fields as needed
 }
 
 // Contribution Types
@@ -64,8 +59,36 @@ export interface Contribution {
           lastName: string;
       }
   };
-  // Add other fields as needed
 }
+// Loan Types
+
+export type LoanStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ACTIVE' | 'PAID' | 'DEFAULTED';
+
+export interface LoanPayment {
+    id: string;
+    amount: number;
+    paidAt: string;
+    paymentMethod: string;
+}
+
+export interface Loan {
+    id: string;
+    amount: number;
+    interestRate: number;
+    duration: number;
+    purpose: string;
+    status: LoanStatus;
+    appliedAt: string;
+    approvedAt: string | null;
+    disbursedAt: string | null;
+    dueDate: string | null;
+    repaymentAmount: number | null;
+    monthlyInstallment: number | null;
+    membershipId: string;
+    membership: Membership;
+    payments: LoanPayment[];
+}
+
 
 // Dashboard Types
 export interface ChamaDashboardStats {
@@ -91,7 +114,4 @@ export interface AuditLog {
   chama: {
     name: string;
   } | null;
-
-
 }
-  // Add other fields as needed
