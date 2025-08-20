@@ -172,6 +172,7 @@ export interface AuditLog {
   } | null;
 }
 
+// Mpesa transaction types
 export interface MpesaTransaction {
     id: string;
     type: 'Contribution' | 'Disbursement';
@@ -186,4 +187,30 @@ export interface MpesaTransaction {
     purpose?: string;
     interestRate?: number;
     duration?: number;
+}
+
+// Meeting types
+export type MeetingStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+
+export interface MeetingAttendance {
+    id: string;
+    attendedAt: string;
+    membership: {
+        user: {
+            firstName: string;
+            lastName: string;
+        }
+    }
+}
+
+export interface Meeting {
+    id: string;
+    title: string;
+    agenda: string;
+    scheduledFor: string;
+    location: string;
+    status: MeetingStatus;
+    minutes: string | null;
+    chamaId: string;
+    attendance: MeetingAttendance[];
 }
