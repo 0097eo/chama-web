@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ContributionForm } from "@/components/contributions/ContributionForm";
-import { MpesaPayment } from "@/components/contributions/MpesaPayment";
+import { MpesaPayment } from "@/components/payments/MpesaPayment";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useGetChamas } from "@/hooks/useChamas";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, Landmark, HandCoins, Calendar, FileText, Gauge } from "lucide-react";
+import { Home, Users, Landmark, HandCoins, Calendar, FileText, Gauge, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/dashboard/contributions", label: "Contributions", icon: Landmark },
   { href: "/dashboard/loans", label: "Loans", icon: HandCoins },
   { href: "/dashboard/reports", label: "Reports", icon: Gauge },
+  { href: "/dashboard/payments", label: "Mpesa Payments", icon: Banknote},
   { href: "/dashboard/meetings", label: "Meetings", icon: Calendar },
   { href: "/dashboard/files", label: "Files", icon: FileText },
 ];

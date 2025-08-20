@@ -15,7 +15,7 @@ export function AccessDenied({ requiredRoles, onReturn }: AccessDeniedProps) {
 
     const handleReturnClick = () => {
         onReturn();
-        router.push('/dashboard/reports');
+        router.push('/dashboard');
     };
 
     return (
@@ -34,7 +34,7 @@ export function AccessDenied({ requiredRoles, onReturn }: AccessDeniedProps) {
                     </p>
                 )}
                 <Button onClick={handleReturnClick}>
-                    Return to Reports Dashboard
+                    Return to Dashboard
                 </Button>
             </CardContent>
         </Card>

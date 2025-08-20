@@ -171,3 +171,19 @@ export interface AuditLog {
     name: string;
   } | null;
 }
+
+export interface MpesaTransaction {
+    id: string;
+    type: 'Contribution' | 'Disbursement';
+    amount: number;
+    status: string;
+    mpesaCode: string | null;
+    date: string;
+    memberName: string;
+    month?: number;
+    year?: number;
+    penaltyApplied?: number;
+    purpose?: string;
+    interestRate?: number;
+    duration?: number;
+}
