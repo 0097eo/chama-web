@@ -13,11 +13,12 @@ import { useChamaContext } from "@/context/ChamaContext";
 import { useRouter } from "next/navigation";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ChamaSelector } from "@/components/chamas/ChamaSelector";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title is too short."),
@@ -28,12 +29,27 @@ const formSchema = z.object({
   }).refine((date) => date > new Date(), {
     message: "Meeting date must be in the future",
   }),
+  time: z.string().min(1, "Please select a time"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Generate time options
+const generateTimeOptions = () => {
+  const times = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const display = format(new Date(2000, 0, 1, hour, minute), 'h:mm a');
+      times.push({ value: time, display });
+    }
+  }
+  return times;
+};
+
 export default function CreateMeetingPage() {
     const router = useRouter();
+    const timeOptions = generateTimeOptions();
 
     const { chamas, activeChama, setActiveChamaId, isPrivileged, isLoading } = useChamaContext();
     const scheduleMeetingMutation = useScheduleMeeting();
@@ -42,19 +58,24 @@ export default function CreateMeetingPage() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             scheduledFor: new Date(),
+            time: "09:00",
         }
     });
 
     const onSubmit = (values: FormValues) => {
-
         if (!activeChama) return;
+        
+        // Combine date and time
+        const [hours, minutes] = values.time.split(':').map(Number);
+        const scheduledDateTime = new Date(values.scheduledFor);
+        scheduledDateTime.setHours(hours, minutes, 0, 0);
         
         const meetingData = {
             chamaId: activeChama.id,
             title: values.title,
             agenda: values.agenda,
             location: values.location,
-            scheduledFor: values.scheduledFor.toISOString(),
+            scheduledFor: scheduledDateTime.toISOString(),
         };
         
         scheduleMeetingMutation.mutate(meetingData, {
@@ -118,41 +139,67 @@ export default function CreateMeetingPage() {
                                     </FormItem>
                                 )}/>
                                 
-                                <FormField control={form.control} name="scheduledFor" render={({ field }) => (
-                                    <FormItem className="flex flex-col">
-                                        <FormLabel>Date and Time</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="scheduledFor" render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                            <FormLabel>Date</FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button 
+                                                            variant={"outline"} 
+                                                            className={cn(
+                                                                "pl-3 text-left font-normal", 
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value ? (
+                                                                format(field.value, "PPP")
+                                                            ) : (
+                                                                <span>Pick a date</span>
+                                                            )}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar 
+                                                        mode="single" 
+                                                        selected={field.value} 
+                                                        onSelect={field.onChange} 
+                                                        disabled={(date) => date < new Date()} 
+                                                        initialFocus 
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+
+                                    <FormField control={form.control} name="time" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Time</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
-                                                    <Button 
-                                                        variant={"outline"} 
-                                                        className={cn(
-                                                            "pl-3 text-left font-normal", 
-                                                            !field.value && "text-muted-foreground"
-                                                        )}
-                                                    >
-                                                        {field.value ? (
-                                                            format(field.value, "PPP p")
-                                                        ) : (
-                                                            <span>Pick a date</span>
-                                                        )}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
+                                                    <SelectTrigger>
+                                                        <div className="flex items-center">
+                                                            <ClockIcon className="mr-2 h-4 w-4 opacity-50" />
+                                                            <SelectValue placeholder="Select time" />
+                                                        </div>
+                                                    </SelectTrigger>
                                                 </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar 
-                                                    mode="single" 
-                                                    selected={field.value} 
-                                                    onSelect={field.onChange} 
-                                                    disabled={(date) => date < new Date()} 
-                                                    initialFocus 
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+                                                <SelectContent>
+                                                    {timeOptions.map((time) => (
+                                                        <SelectItem key={time.value} value={time.value}>
+                                                            {time.display}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </div>
                                 
                                 <Button type="submit" className="w-full" disabled={scheduleMeetingMutation.isPending}>
                                     {scheduleMeetingMutation.isPending ? "Scheduling..." : "Schedule Meeting"}
