@@ -232,3 +232,13 @@ export interface File  {
     lastName: string;
   } | null;
 }
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string; // e.g 'GENERAL', 'MEETING_REMINDER'
+  read: boolean;
+  createdAt: string;
+  userId: string;
+}
