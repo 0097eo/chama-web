@@ -214,3 +214,21 @@ export interface Meeting {
     chamaId: string;
     attendance: MeetingAttendance[];
 }
+
+// File Types
+export interface File  {
+  id: string;
+  filename: string;
+  url: string;
+  publicId: string;
+  fileType: string;
+  size: number;
+  category: string;
+  uploadedAt: string;
+  chamaId: string;
+  uploaderId: string | null;
+  uploader?: { // The uploader might be null if the user was deleted
+    firstName: string;
+    lastName: string;
+  } | null;
+}
