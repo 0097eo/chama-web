@@ -12,6 +12,7 @@ interface ChamaContextType {
   isLoading: boolean;
   currentUserMembership: Membership | null;
   isPrivileged: boolean;
+  canBroadCast: boolean;
   resetToDefaultChama: () => void;
 }
 
@@ -51,6 +52,10 @@ export function ChamaProvider({ children }: { children: ReactNode }) {
       return !!currentUserMembership && privilegedRoles.includes(currentUserMembership.role);
   }, [currentUserMembership]);
 
+ const canBroadCast = useMemo(() => {
+    return !!currentUserMembership && ['ADMIN', 'SECRETARY'].includes(currentUserMembership.role);
+  }, [currentUserMembership]); 
+
 
   const handleSelectChama = (id: string) => {
     setActiveChamaId(id);
@@ -70,6 +75,7 @@ export function ChamaProvider({ children }: { children: ReactNode }) {
     currentUserMembership,
     isPrivileged,
     resetToDefaultChama,
+    canBroadCast
   };
 
   return (

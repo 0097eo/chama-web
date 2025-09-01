@@ -1,12 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { AxiosError } from 'axios';
-import { Notification } from '@/types/api';
+import type { Notification } from '@/types/api';
+import { io, Socket } from 'socket.io-client';
 
-// === API Function ===
+// === API Functions ===
 interface ContributionReminderPayload {
     chamaId: string;
     userId: string;
@@ -58,8 +61,169 @@ const broadcastMessage = async (data: BroadcastPayload): Promise<void> => {
     });
 };
 
+// === WebSocket Hook with NextAuth ===
+export const useWebSocketNotifications = (chamaId: string | null | undefined) => {
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
+    const { data: session, status } = useSession();
+    const queryClient = useQueryClient();
 
-// === React Query Hook ===
+    useEffect(() => {
+        // Don't connect if no chamaId, session not loaded, or no session
+        if (!chamaId || status === 'loading' || !session?.accessToken) {
+            return;
+        }
+
+        const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000', {
+            auth: { 
+                token: session.accessToken 
+            },
+            transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+        });
+
+        setSocket(newSocket);
+
+        newSocket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+            setIsConnected(true);
+        });
+
+        newSocket.on('disconnect', (reason) => {
+            console.log('Disconnected from WebSocket server:', reason);
+            setIsConnected(false);
+        });
+
+        newSocket.on('new_notification', (notification) => {
+            console.log('New notification received:', notification);
+            
+            // Update the query cache with the new notification
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return [notification];
+                return [notification, ...oldData];
+            });
+
+            // Show toast notification
+            toast.success(`${notification.title}: ${notification.message}`, {
+                duration: 4000,
+                position: 'top-right',
+            });
+            
+            // Show browser notification if permitted
+            showBrowserNotification(notification);
+        });
+
+        newSocket.on('new_broadcast_notification', (notification) => {
+            console.log('New broadcast notification:', notification);
+            
+            // Show toast for broadcast
+            toast(`📢 ${notification.title}`, {
+                description: notification.message,
+                duration: 5000,
+                style: {
+                    background: '#3b82f6',
+                    color: 'white',
+                },
+            });
+
+            showBrowserNotification(notification);
+        });
+
+        newSocket.on('notification_marked_read', ({ notificationId }) => {
+            // Update the specific notification in cache
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: true }
+                        : notification
+                );
+            });
+        });
+
+        newSocket.on('notification_deleted', ({ notificationId }) => {
+            // Remove notification from cache
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.filter(notification => notification.id !== notificationId);
+            });
+        });
+
+        newSocket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error.message);
+            setIsConnected(false);
+            
+            // Show error toast only if it's an auth error
+            if (error.message.includes('Authentication')) {
+                toast.error('WebSocket authentication failed. Please refresh the page.');
+            }
+        });
+
+        // Handle reconnection
+        newSocket.on('reconnect', (attemptNumber) => {
+            console.log('Reconnected to WebSocket server after', attemptNumber, 'attempts');
+            toast.success('Connection restored');
+        });
+
+        newSocket.on('reconnect_error', (error) => {
+            console.error('WebSocket reconnection failed:', error);
+        });
+
+        return () => {
+            console.log('Cleaning up WebSocket connection');
+            newSocket.disconnect();
+            setSocket(null);
+            setIsConnected(false);
+        };
+    }, [chamaId, session?.accessToken, status, queryClient]);
+
+    const showBrowserNotification = useCallback((notification: any) => {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const browserNotification = new Notification(notification.title, {
+                body: notification.message,
+                icon: '/favicon.ico',
+                tag: notification.id, // Prevents duplicate notifications
+                badge: '/favicon.ico',
+                data: {
+                    url: '/dashboard/notifications'
+                }
+            });
+
+            // Handle notification click
+            browserNotification.onclick = () => {
+                window.focus();
+                window.location.href = '/dashboard/notifications';
+                browserNotification.close();
+            };
+
+            // Auto close after 5 seconds
+            setTimeout(() => {
+                browserNotification.close();
+            }, 5000);
+        }
+    }, []);
+
+    const requestNotificationPermission = useCallback(async () => {
+        if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                toast.success('Browser notifications enabled!');
+            } else if (permission === 'denied') {
+                toast.error('Browser notifications blocked. Enable them in your browser settings.');
+            }
+            return permission === 'granted';
+        }
+        return false;
+    }, []);
+
+    return {
+        socket,
+        isConnected,
+        requestNotificationPermission,
+        isAuthenticated: status === 'authenticated',
+    };
+};
+
+// === Enhanced React Query Hooks ===
 export const useSendContributionReminder = () => {
     return useMutation({
         mutationFn: sendContributionReminderSms,
@@ -85,39 +249,94 @@ export const useSendLoanReminder = () => {
 };
 
 export const useGetNotifications = (chamaId: string | null | undefined) => {
-    //const queryClient = useQueryClient();
+    const { status } = useSession();
+    
+    // Initialize WebSocket connection
+    const { isConnected, isAuthenticated } = useWebSocketNotifications(chamaId);
+
     return useQuery<Notification[], Error>({
         queryKey: ['notifications', chamaId],
         queryFn: () => getNotifications(chamaId!),
-        enabled: !!chamaId,
+        enabled: !!chamaId && status === 'authenticated',
         staleTime: 1000 * 60, // 1 minute
-        refetchOnWindowFocus: true, // Refetch when user returns to the tab
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        // Add connection status to query meta for debugging
+        meta: {
+            wsConnected: isConnected,
+            authenticated: isAuthenticated,
+        }
     });
 };
 
 export const useMarkAsRead = () => {
     const queryClient = useQueryClient();
+    
     return useMutation<Notification, Error, { notificationId: string, chamaId: string }>({
         mutationFn: ({ notificationId }) => markAsRead(notificationId),
-        onSuccess: (_, variables) => {
-            // Invalidate the query for the specific chama
-            queryClient.invalidateQueries({ queryKey: ['notifications', variables.chamaId] });
+        
+        // Optimistically update the UI before the API call
+        onMutate: async ({ notificationId, chamaId }) => {
+            await queryClient.cancelQueries({ queryKey: ['notifications', chamaId] });
+            
+            const previousNotifications = queryClient.getQueryData(['notifications', chamaId]);
+            
+            queryClient.setQueryData(['notifications', chamaId], (old: Notification[] | undefined) => {
+                if (!old) return old;
+                return old.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: true }
+                        : notification
+                );
+            });
+
+            return { previousNotifications };
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        
+        onError: (error: AxiosError<{ message: string }>, variables, context) => {
+            // Revert optimistic update on error
+            if (context?.previousNotifications) {
+                queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
+            }
             toast.error(error.response?.data?.message || 'Failed to mark as read.');
+        },
+        
+        onSettled: (_, __, variables) => {
+            // Invalidate to ensure consistency
+            queryClient.invalidateQueries({ queryKey: ['notifications', variables.chamaId] });
         }
     });
 };
 
 export const useDeleteNotification = () => {
     const queryClient = useQueryClient();
+    
     return useMutation<void, Error, { notificationId: string, chamaId: string }>({
         mutationFn: ({ notificationId }) => deleteNotification(notificationId),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['notifications', variables.chamaId] });
+        
+        // Optimistically remove from UI
+        onMutate: async ({ notificationId, chamaId }) => {
+            await queryClient.cancelQueries({ queryKey: ['notifications', chamaId] });
+            
+            const previousNotifications = queryClient.getQueryData(['notifications', chamaId]);
+            
+            queryClient.setQueryData(['notifications', chamaId], (old: Notification[] | undefined) => {
+                if (!old) return old;
+                return old.filter(notification => notification.id !== notificationId);
+            });
+
+            return { previousNotifications };
+        },
+        
+        onSuccess: () => {
             toast.success("Notification deleted.");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        
+        onError: (error: AxiosError<{ message: string }>, variables, context) => {
+            // Revert optimistic update on error
+            if (context?.previousNotifications) {
+                queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
+            }
             toast.error(error.response?.data?.message || 'Failed to delete notification.');
         }
     });
@@ -125,15 +344,30 @@ export const useDeleteNotification = () => {
 
 export const useBroadcastMessage = () => {
     const queryClient = useQueryClient();
+    
     return useMutation<void, Error, BroadcastPayload>({
         mutationFn: broadcastMessage,
         onSuccess: (_, variables) => {
             toast.success("Broadcast message sent successfully!");
-            // After broadcasting, invalidate the notifications for that chama to show the new ones
+            // WebSocket will handle real-time updates, but invalidate as backup
             queryClient.invalidateQueries({ queryKey: ['notifications', variables.chamaId] });
         },
         onError: (error: AxiosError<{ message: string }>) => {
             toast.error(error.response?.data?.message || 'Failed to send broadcast.');
         }
     });
+};
+
+// === Utility Hook for Notification Stats ===
+export const useNotificationStats = (chamaId: string | null | undefined) => {
+    const { data: notifications = [] } = useGetNotifications(chamaId);
+    
+    const unreadCount = notifications.filter(n => !n.read).length;
+    const totalCount = notifications.length;
+    
+    return {
+        unreadCount,
+        totalCount,
+        hasUnread: unreadCount > 0,
+    };
 };

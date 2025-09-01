@@ -14,7 +14,7 @@ export default function NotificationsPage() {
         chamas, 
         activeChama, 
         setActiveChamaId, 
-        isPrivileged, 
+        canBroadCast,
         isLoading 
     } = useChamaContext();
 
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
                         <NotificationList chamaId={activeChama.id} />
                     </div>
 
-                    {isPrivileged && (
+                    {canBroadCast &&(
                         <div className="space-y-4">
                             <BroadcastMessage />
                         </div>
