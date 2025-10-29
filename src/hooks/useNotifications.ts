@@ -9,7 +9,6 @@ import { AxiosError } from 'axios';
 import type { Notification } from '@/types/api';
 import { io, Socket } from 'socket.io-client';
 
-// === API Functions ===
 interface ContributionReminderPayload {
     chamaId: string;
     userId: string;
@@ -30,6 +29,7 @@ interface BroadcastPayload {
     message: string;
 }
 
+// === API Functions ===
 const sendContributionReminderSms = async (data: ContributionReminderPayload) => {
     const response = await api.post('/notifications/reminders/contribution', data);
     return response.data;
@@ -61,6 +61,31 @@ const broadcastMessage = async (data: BroadcastPayload): Promise<void> => {
     });
 };
 
+const resolveWebSocketUrl = () => {
+    if (process.env.NEXT_PUBLIC_WS_URL) {
+        return process.env.NEXT_PUBLIC_WS_URL;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiUrl) {
+        try {
+            const parsed = new URL(apiUrl);
+            const protocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${parsed.host}`;
+        } catch (error) {
+            console.warn('Failed to derive WebSocket URL from NEXT_PUBLIC_API_URL:', error);
+        }
+    }
+
+    if (typeof window !== 'undefined') {
+        const { protocol, host } = window.location;
+        const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${wsProtocol}//${host}`;
+    }
+
+    return null;
+};
+
 // === WebSocket Hook with NextAuth ===
 export const useWebSocketNotifications = (chamaId: string | null | undefined) => {
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -68,115 +93,7 @@ export const useWebSocketNotifications = (chamaId: string | null | undefined) =>
     const { data: session, status } = useSession();
     const queryClient = useQueryClient();
 
-    useEffect(() => {
-        // Don't connect if no chamaId, session not loaded, or no session
-        if (!chamaId || status === 'loading' || !session?.accessToken) {
-            return;
-        }
-
-        const newSocket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000', {
-            auth: { 
-                token: session.accessToken 
-            },
-            transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
-        });
-
-        setSocket(newSocket);
-
-        newSocket.on('connect', () => {
-            console.log('Connected to WebSocket server');
-            setIsConnected(true);
-        });
-
-        newSocket.on('disconnect', (reason) => {
-            console.log('Disconnected from WebSocket server:', reason);
-            setIsConnected(false);
-        });
-
-        newSocket.on('new_notification', (notification) => {
-            console.log('New notification received:', notification);
-            
-            // Update the query cache with the new notification
-            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
-                if (!oldData) return [notification];
-                return [notification, ...oldData];
-            });
-
-            // Show toast notification
-            toast.success(`${notification.title}: ${notification.message}`, {
-                duration: 4000,
-                position: 'top-right',
-            });
-            
-            // Show browser notification if permitted
-            showBrowserNotification(notification);
-        });
-
-        newSocket.on('new_broadcast_notification', (notification) => {
-            console.log('New broadcast notification:', notification);
-            
-            // Show toast for broadcast
-            toast(`📢 ${notification.title}`, {
-                description: notification.message,
-                duration: 5000,
-                style: {
-                    background: '#3b82f6',
-                    color: 'white',
-                },
-            });
-
-            showBrowserNotification(notification);
-        });
-
-        newSocket.on('notification_marked_read', ({ notificationId }) => {
-            // Update the specific notification in cache
-            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
-                if (!oldData) return oldData;
-                return oldData.map(notification =>
-                    notification.id === notificationId
-                        ? { ...notification, read: true }
-                        : notification
-                );
-            });
-        });
-
-        newSocket.on('notification_deleted', ({ notificationId }) => {
-            // Remove notification from cache
-            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
-                if (!oldData) return oldData;
-                return oldData.filter(notification => notification.id !== notificationId);
-            });
-        });
-
-        newSocket.on('connect_error', (error) => {
-            console.error('WebSocket connection error:', error.message);
-            setIsConnected(false);
-            
-            // Show error toast only if it's an auth error
-            if (error.message.includes('Authentication')) {
-                toast.error('WebSocket authentication failed. Please refresh the page.');
-            }
-        });
-
-        // Handle reconnection
-        newSocket.on('reconnect', (attemptNumber) => {
-            console.log('Reconnected to WebSocket server after', attemptNumber, 'attempts');
-            toast.success('Connection restored');
-        });
-
-        newSocket.on('reconnect_error', (error) => {
-            console.error('WebSocket reconnection failed:', error);
-        });
-
-        return () => {
-            console.log('Cleaning up WebSocket connection');
-            newSocket.disconnect();
-            setSocket(null);
-            setIsConnected(false);
-        };
-    }, [chamaId, session?.accessToken, status, queryClient]);
-
-    const showBrowserNotification = useCallback((notification: any) => {
+    const showBrowserNotification = useCallback((notification: Notification) => {
         if ('Notification' in window && Notification.permission === 'granted') {
             const browserNotification = new Notification(notification.title, {
                 body: notification.message,
@@ -201,6 +118,120 @@ export const useWebSocketNotifications = (chamaId: string | null | undefined) =>
             }, 5000);
         }
     }, []);
+
+    useEffect(() => {
+        // Don't connect if no chamaId, session not loaded, or no session
+        if (!chamaId || status === 'loading' || !session?.accessToken) {
+            return;
+        }
+
+        const wsUrl = resolveWebSocketUrl();
+        if (!wsUrl) {
+            console.warn('WebSocket URL could not be determined. Skipping connection attempt.');
+            return;
+        }
+
+        const newSocket = io(wsUrl, {
+            auth: {
+                token: session.accessToken
+            },
+            transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+            path: '/socket.io',
+        });
+
+        setSocket(newSocket);
+
+        newSocket.on('connect', () => {
+            console.log('Connected to WebSocket server');
+            setIsConnected(true);
+        });
+
+        newSocket.on('disconnect', (reason: Socket.DisconnectReason) => {
+            console.log('Disconnected from WebSocket server:', reason);
+            setIsConnected(false);
+        });
+
+        newSocket.on('new_notification', (notification: Notification) => {
+            console.log('New notification received:', notification);
+
+            // Update the query cache with the new notification
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return [notification];
+                return [notification, ...oldData];
+            });
+
+            // Show toast notification
+            toast.success(`${notification.title}: ${notification.message}`, {
+                duration: 4000,
+                position: 'top-right',
+            });
+
+            // Show browser notification if permitted
+            showBrowserNotification(notification);
+        });
+
+        newSocket.on('new_broadcast_notification', (notification: Notification) => {
+            console.log('New broadcast notification:', notification);
+
+            // Show toast for broadcast
+            toast(`📢 ${notification.title}: ${notification.message}`, {
+                duration: 5000,
+                style: {
+                    background: '#3b82f6',
+                    color: 'white',
+                },
+            });
+
+            showBrowserNotification(notification);
+        });
+
+        newSocket.on('notification_marked_read', ({ notificationId }: { notificationId: string }) => {
+            // Update the specific notification in cache
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.map(notification =>
+                    notification.id === notificationId
+                        ? { ...notification, read: true }
+                        : notification
+                );
+            });
+        });
+
+        newSocket.on('notification_deleted', ({ notificationId }: { notificationId: string }) => {
+            // Remove notification from cache
+            queryClient.setQueryData(['notifications', chamaId], (oldData: Notification[] | undefined) => {
+                if (!oldData) return oldData;
+                return oldData.filter(notification => notification.id !== notificationId);
+            });
+        });
+
+        newSocket.on('connect_error', (error: Error) => {
+            console.error('WebSocket connection error:', error.message);
+            setIsConnected(false);
+
+            // Show error toast only if it's an auth error
+            if (error.message.includes('Authentication')) {
+                toast.error('WebSocket authentication failed. Please refresh the page.');
+            }
+        });
+
+        // Handle reconnection
+        newSocket.on('reconnect', (attemptNumber: number) => {
+            console.log('Reconnected to WebSocket server after', attemptNumber, 'attempts');
+            toast.success('Connection restored');
+        });
+
+        newSocket.on('reconnect_error', (error: Error) => {
+            console.error('WebSocket reconnection failed:', error);
+        });
+
+        return () => {
+            console.log('Cleaning up WebSocket connection');
+            newSocket.disconnect();
+            setSocket(null);
+            setIsConnected(false);
+        };
+    }, [chamaId, queryClient, session?.accessToken, showBrowserNotification, status]);
 
     const requestNotificationPermission = useCallback(async () => {
         if ('Notification' in window) {
@@ -293,7 +324,11 @@ export const useMarkAsRead = () => {
             return { previousNotifications };
         },
         
-        onError: (error: AxiosError<{ message: string }>, variables, context) => {
+        onError: (
+            error: AxiosError<{ message: string }>,
+            variables,
+            context: { previousNotifications?: unknown }
+        ) => {
             // Revert optimistic update on error
             if (context?.previousNotifications) {
                 queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
@@ -332,7 +367,11 @@ export const useDeleteNotification = () => {
             toast.success("Notification deleted.");
         },
         
-        onError: (error: AxiosError<{ message: string }>, variables, context) => {
+        onError: (
+            error: AxiosError<{ message: string }>,
+            variables,
+            context: { previousNotifications?: unknown }
+        ) => {
             // Revert optimistic update on error
             if (context?.previousNotifications) {
                 queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
