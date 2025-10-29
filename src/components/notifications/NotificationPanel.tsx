@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Trash2, Check, Wifi, WifiOff } from 'lucide-react';
+import { 
+    Bell, BellOff, Trash2, Check, Wifi, WifiOff,
+    Coins, Banknote, CalendarDays, Megaphone, BellRing,
+} from 'lucide-react';
 import { 
     useGetNotifications, 
     useMarkAsRead, 
@@ -57,15 +60,15 @@ export const NotificationPanel = ({ chamaId }: NotificationPanelProps) => {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'CONTRIBUTION':
-                return '💰';
+                return <Coins size={18} className="text-yellow-500" />;
             case 'LOAN':
-                return '🏦';
+                return <Banknote size={18} className="text-green-500" />;
             case 'MEETING':
-                return '📅';
+                return <CalendarDays size={18} className="text-blue-500" />;
             case 'GENERAL':
-                return '📢';
+                return <Megaphone size={18} className="text-purple-500" />;
             default:
-                return '🔔';
+                return <BellRing size={18} className="text-gray-500" />;
         }
     };
 

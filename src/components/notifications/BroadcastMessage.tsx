@@ -118,17 +118,6 @@ export const BroadcastMessage = () => {
                     )}
 
                     <div className="flex items-center justify-between pt-4">
-                        <div className="text-sm text-muted-foreground">
-                            This message will be sent to all active members via:
-                            <div className="flex items-center gap-4 mt-1 text-xs">
-                                <span className="flex items-center gap-1">
-                                    🔔 App notification
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    📱 SMS (if enabled)
-                                </span>
-                            </div>
-                        </div>
                         
                         <Button 
                             type="submit"

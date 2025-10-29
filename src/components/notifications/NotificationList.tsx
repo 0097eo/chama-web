@@ -7,7 +7,7 @@ import {
     useDeleteNotification,
     useWebSocketNotifications 
 } from '@/hooks/useNotifications';
-import { Bell, BellOff, Check, Trash2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Bell, BellOff, Check, Trash2, Wifi, WifiOff, RefreshCw,Coins, Banknote, CalendarDays, Megaphone, AlarmClock, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,17 +64,17 @@ export const NotificationList = ({ chamaId }: NotificationListProps) => {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'CONTRIBUTION':
-                return '💰';
+                return <Coins size={18} className="text-yellow-500" />;
             case 'LOAN':
-                return '🏦';
+                return <Banknote size={18} className="text-green-500" />;
             case 'MEETING':
-                return '📅';
+                return <CalendarDays size={18} className="text-blue-500" />;
             case 'GENERAL':
-                return '📢';
+                return <Megaphone size={18} className="text-purple-500" />;
             case 'REMINDER':
-                return '⏰';
+                return <AlarmClock size={18} className="text-orange-500" />;
             default:
-                return '🔔';
+                return <BellRing size={18} className="text-gray-500" />;
         }
     };
 
