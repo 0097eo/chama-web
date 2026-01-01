@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, Controller } from "react-hook-form";
@@ -43,14 +42,33 @@ export default function CreateChamaPage() {
 
   async function onSubmit(values: ChamaFormValues) {
     const formData = new FormData();
+    
+    // Append all fields
     formData.append("name", values.name);
     formData.append("monthlyContribution", String(values.monthlyContribution));
     formData.append("meetingDay", values.meetingDay);
-    if (values.description) formData.append("description", values.description);
-    if (values.constitution) formData.append("constitution", values.constitution);
-        
-    await createChamaMutation.mutateAsync(formData);
-    router.push("/dashboard/chamas");
+    
+    // Always append description, even if empty
+    formData.append("description", values.description || "");
+    
+    // Only append constitution if file exists
+    if (values.constitution) {
+      formData.append("constitution", values.constitution);
+    }
+
+    // Debug log
+    console.log("FormData being sent:");
+    for (let [key, value] of formData.entries()) {
+      console.log(key, ":", value);
+    }
+
+    try {
+      await createChamaMutation.mutateAsync(formData);
+      router.push("/dashboard/chamas");
+    } catch (error) {
+      console.error("Error creating chama:", error);
+      // Error is already handled by the mutation's onError
+    }
   }
 
   return (
@@ -69,7 +87,7 @@ export default function CreateChamaPage() {
                 <FormItem>
                   <FormLabel>Chama Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="Enter chama name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -81,9 +99,9 @@ export default function CreateChamaPage() {
               name="description" 
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} placeholder="Brief description of your chama" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

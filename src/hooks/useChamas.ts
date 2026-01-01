@@ -19,9 +19,7 @@ const getChamaById = async (chamaId: string): Promise<Chama> => {
 };
 
 const createChama = async (chamaData: FormData): Promise<Chama> => {
-    const response = await api.post('/chamas', chamaData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post('/chamas', chamaData);
     return response.data.data;
 };
 
@@ -67,8 +65,11 @@ export const useCreateChama = () => {
       toast.success(`Chama "${data.name}" created successfully!`);
     },
     onError: (error) => {
-      if (isAxiosError<{ message: string }>(error)) {
-        toast.error(error.response?.data?.message || 'Failed to create chama.');
+      if (isAxiosError<{ message?: string; errors?: Array<{ msg: string }> }>(error)) {
+        const errorMessage = error.response?.data?.errors?.[0]?.msg 
+          || error.response?.data?.message 
+          || 'Failed to create chama.';
+        toast.error(errorMessage);
       } else {
         toast.error('An unexpected error occurred.');
       }
