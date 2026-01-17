@@ -18,10 +18,10 @@ import { CheckCircle2, XCircle } from "lucide-react";
 
 const formSchema = z.object({
   membershipId: z.string().min(1, "Please select the chama you are applying for."),
-  amount: z.coerce.number().positive("Loan amount must be a positive number."),
-  duration: z.coerce.number().int().min(1, "Duration must be at least 1 month.").positive(),
+  amount: z.number().positive("Loan amount must be a positive number."),
+  duration: z.number().int().min(1, "Duration must be at least 1 month.").positive(),
   purpose: z.string().min(10, "Please provide a brief purpose for the loan."),
-  interestRate: z.coerce.number().min(0).max(1),
+  interestRate: z.number().min(0).max(1),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,7 +84,15 @@ export function LoanApplicationForm({ chamas }: { chamas: Chama[] }) {
                     <FormField control={form.control} name="amount" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Loan Amount (KSH)</FormLabel>
-                            <FormControl><Input type="number" placeholder="e.g., 20000" {...field} /></FormControl>
+                            <FormControl>
+                                <Input 
+                                    type="number" 
+                                    placeholder="e.g., 20000" 
+                                    {...field}
+                                    value={field.value || ""}
+                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />
@@ -116,7 +124,14 @@ export function LoanApplicationForm({ chamas }: { chamas: Chama[] }) {
                      <FormField control={form.control} name="duration" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Repayment Duration (Months)</FormLabel>
-                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormControl>
+                                <Input 
+                                    type="number" 
+                                    {...field}
+                                    value={field.value || ""}
+                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                                />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />
