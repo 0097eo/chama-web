@@ -25,7 +25,7 @@ import { Trash2, AlertTriangle } from "lucide-react";
 const formSchema = z.object({
   name: z.string().min(3, "Chama name must be at least 3 characters."),
   description: z.string().optional(),
-  monthlyContribution: z.coerce.number().positive("Contribution must be a positive number."),
+  monthlyContribution: z.number().positive("Contribution must be a positive number."),
   meetingDay: z.string().min(3, "Meeting day description is required."),
 });
 
@@ -33,14 +33,14 @@ type SettingsFormValues = z.infer<typeof formSchema>;
 
 const useUpdateChama = () => {
     const queryClient = useQueryClient();
-    return useMutation<Chama, Error, { chamaId: string; data: Partial<SettingsFormValues> }>({
+    return useMutation<Chama, AxiosError<{ message: string }>, { chamaId: string; data: Partial<SettingsFormValues> }>({
         mutationFn: ({ chamaId, data }) => api.put(`/chamas/${chamaId}`, data).then(res => res.data.data),
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['chama', data.id] });
             queryClient.invalidateQueries({ queryKey: ['chamas'] });
             toast.success("Chama settings updated successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to update settings.");
         }
     });
@@ -104,7 +104,19 @@ export function ChamaSettingsForm({ chama }: { chama: Chama }) {
                 <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} disabled={!isAdmin} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="monthlyContribution" render={({ field }) => (
-                <FormItem><FormLabel>Monthly Contribution (KSH)</FormLabel><FormControl><Input type="number" {...field} disabled={!isAdmin} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Monthly Contribution (KSH)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                      disabled={!isAdmin} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={form.control} name="meetingDay" render={({ field }) => (
                 <FormItem><FormLabel>Meeting Day</FormLabel><FormControl><Input placeholder="e.g., Last Sunday of the month" {...field} disabled={!isAdmin} /></FormControl><FormMessage /></FormItem>
