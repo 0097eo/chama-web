@@ -23,7 +23,7 @@ async function handleRequest(request: NextRequest, params: { path: string[] }) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       try {
         body = await request.json();
-      } catch (e) {
+      } catch {
         // No body or invalid JSON
       }
     }
@@ -73,7 +73,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { path: 
   return handleRequest(request, params);
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
