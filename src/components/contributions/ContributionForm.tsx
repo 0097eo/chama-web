@@ -21,11 +21,11 @@ import { useRouter } from "next/navigation";
 const formSchema = z.object({
   chamaId: z.string().min(1, "Please select a chama."),
   membershipId: z.string().min(1, "Please select a member."),
-  amount: z.coerce.number().positive(),
-  month: z.coerce.number().min(1).max(12),
-  year: z.coerce.number().min(new Date().getFullYear() - 10).max(new Date().getFullYear() + 1),
+  amount: z.number().positive(),
+  month: z.number().min(1).max(12),
+  year: z.number().min(new Date().getFullYear() - 10).max(new Date().getFullYear() + 1),
   paymentMethod: z.enum(["Cash", "Bank"]),
-  paidAt: z.date({ required_error: "A payment date is required." }),
+  paidAt: z.date(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -165,7 +165,14 @@ export function ContributionForm({ chamas, selectedChama }: { chamas: Chama[], s
         <FormField control={form.control} name="amount" render={({ field }) => (
             <FormItem>
                 <FormLabel>Amount (KSH)</FormLabel>
-                <FormControl><Input type="number" {...field} /></FormControl>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                  />
+                </FormControl>
                 <FormMessage />
             </FormItem>
         )} />
