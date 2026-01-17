@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 const formSchema = z.object({
   name: z.string().min(3, "Chama name must be at least 3 characters."),
   description: z.string().optional(),
-  monthlyContribution: z.coerce.number().positive({ 
+  monthlyContribution: z.number().positive({ 
     message: "Contribution must be a positive number." 
   }),
   meetingDay: z.string().min(3, "Meeting day description is required."),
@@ -38,8 +38,6 @@ export default function CreateChamaPage() {
     mode: "onChange",
   });
 
-  const { control, handleSubmit } = form;
-
   async function onSubmit(values: ChamaFormValues) {
     const formData = new FormData();
     
@@ -58,7 +56,7 @@ export default function CreateChamaPage() {
 
     // Debug log
     console.log("FormData being sent:");
-    for (let [key, value] of formData.entries()) {
+    for (const [key, value] of formData.entries()) {
       console.log(key, ":", value);
     }
 
@@ -78,10 +76,10 @@ export default function CreateChamaPage() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             <FormField 
-              control={control} 
+              control={form.control} 
               name="name" 
               render={({ field }) => (
                 <FormItem>
@@ -95,7 +93,7 @@ export default function CreateChamaPage() {
             />
 
             <FormField 
-              control={control} 
+              control={form.control} 
               name="description" 
               render={({ field }) => (
                 <FormItem>
@@ -109,7 +107,7 @@ export default function CreateChamaPage() {
             />
 
             <FormField 
-              control={control} 
+              control={form.control} 
               name="monthlyContribution" 
               render={({ field }) => (
                 <FormItem>
@@ -129,7 +127,7 @@ export default function CreateChamaPage() {
             />
 
             <FormField 
-              control={control} 
+              control={form.control} 
               name="meetingDay" 
               render={({ field }) => (
                 <FormItem>
@@ -142,17 +140,17 @@ export default function CreateChamaPage() {
               )} 
             />
 
-            <Controller
-              control={control}
+            <FormField
+              control={form.control}
               name="constitution"
-              render={({ field: { onChange, name, ref }, fieldState }) => (
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
                   <FormLabel>Constitution (Optional)</FormLabel>
                   <FormControl>
                     <Input
+                      {...fieldProps}
                       type="file"
-                      name={name}
-                      ref={ref}
+                      value={undefined}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         onChange(file);
@@ -160,7 +158,7 @@ export default function CreateChamaPage() {
                       accept=".pdf,.doc,.docx"
                     />
                   </FormControl>
-                  {fieldState.error && <FormMessage />}
+                  <FormMessage />
                 </FormItem>
               )}
             />
