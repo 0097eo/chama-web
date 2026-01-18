@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://44.200.248.168:3000';
 
-async function handleRequest(request: NextRequest, params: { path: string[] }) {
-  const path = params.path.join('/');
+async function handleRequest(request: NextRequest, params: Promise<{ path: string[] }>) {
+  const { path: pathArray } = await params;
+  const path = pathArray.join('/');
   const searchParams = request.nextUrl.search;
   const url = `${API_URL}/api/${path}${searchParams}`;
   
@@ -53,23 +54,23 @@ async function handleRequest(request: NextRequest, params: { path: string[] }) {
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(request, params);
 }
 
-export async function POST(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(request, params);
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(request, params);
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(request, params);
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return handleRequest(request, params);
 }
 
