@@ -303,14 +303,19 @@ export const useGetNotifications = (chamaId: string | null | undefined) => {
 export const useMarkAsRead = () => {
     const queryClient = useQueryClient();
     
-    return useMutation<Notification, Error, { notificationId: string, chamaId: string }>({
+    return useMutation<
+        Notification, 
+        AxiosError<{ message: string }>, 
+        { notificationId: string, chamaId: string },
+        { previousNotifications?: Notification[] }
+    >({
         mutationFn: ({ notificationId }) => markAsRead(notificationId),
         
         // Optimistically update the UI before the API call
         onMutate: async ({ notificationId, chamaId }) => {
             await queryClient.cancelQueries({ queryKey: ['notifications', chamaId] });
             
-            const previousNotifications = queryClient.getQueryData(['notifications', chamaId]);
+            const previousNotifications = queryClient.getQueryData<Notification[]>(['notifications', chamaId]);
             
             queryClient.setQueryData(['notifications', chamaId], (old: Notification[] | undefined) => {
                 if (!old) return old;
@@ -324,11 +329,7 @@ export const useMarkAsRead = () => {
             return { previousNotifications };
         },
         
-        onError: (
-            error: AxiosError<{ message: string }>,
-            variables,
-            context: { previousNotifications?: unknown }
-        ) => {
+        onError: (error, variables, context) => {
             // Revert optimistic update on error
             if (context?.previousNotifications) {
                 queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
@@ -346,14 +347,19 @@ export const useMarkAsRead = () => {
 export const useDeleteNotification = () => {
     const queryClient = useQueryClient();
     
-    return useMutation<void, Error, { notificationId: string, chamaId: string }>({
+    return useMutation<
+        void, 
+        AxiosError<{ message: string }>, 
+        { notificationId: string, chamaId: string },
+        { previousNotifications?: Notification[] }
+    >({
         mutationFn: ({ notificationId }) => deleteNotification(notificationId),
         
         // Optimistically remove from UI
         onMutate: async ({ notificationId, chamaId }) => {
             await queryClient.cancelQueries({ queryKey: ['notifications', chamaId] });
             
-            const previousNotifications = queryClient.getQueryData(['notifications', chamaId]);
+            const previousNotifications = queryClient.getQueryData<Notification[]>(['notifications', chamaId]);
             
             queryClient.setQueryData(['notifications', chamaId], (old: Notification[] | undefined) => {
                 if (!old) return old;
@@ -367,11 +373,7 @@ export const useDeleteNotification = () => {
             toast.success("Notification deleted.");
         },
         
-        onError: (
-            error: AxiosError<{ message: string }>,
-            variables,
-            context: { previousNotifications?: unknown }
-        ) => {
+        onError: (error, variables, context) => {
             // Revert optimistic update on error
             if (context?.previousNotifications) {
                 queryClient.setQueryData(['notifications', variables.chamaId], context.previousNotifications);
@@ -384,14 +386,14 @@ export const useDeleteNotification = () => {
 export const useBroadcastMessage = () => {
     const queryClient = useQueryClient();
     
-    return useMutation<void, Error, BroadcastPayload>({
+    return useMutation<void, AxiosError<{ message: string }>, BroadcastPayload>({
         mutationFn: broadcastMessage,
         onSuccess: (_, variables) => {
             toast.success("Broadcast message sent successfully!");
             // WebSocket will handle real-time updates, but invalidate as backup
             queryClient.invalidateQueries({ queryKey: ['notifications', variables.chamaId] });
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to send broadcast.');
         }
     });

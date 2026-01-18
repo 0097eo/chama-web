@@ -51,13 +51,13 @@ export const useGetChamaFiles = (chamaId: string | null | undefined) => {
 
 export const useUploadFile = () => {
     const queryClient = useQueryClient();
-    return useMutation<ChamaFile, Error, UploadFilePayload>({
+    return useMutation<ChamaFile, AxiosError<{ message: string }>, UploadFilePayload>({
         mutationFn: uploadFile,
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['files', data.chamaId] });
             toast.success("File uploaded successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || 'File upload failed.');
         }
     });
@@ -65,13 +65,13 @@ export const useUploadFile = () => {
 
 export const useDeleteFile = () => {
     const queryClient = useQueryClient();
-    return useMutation<void, Error, { fileId: string; chamaId: string }>({
+    return useMutation<void, AxiosError<{ message: string }>, { fileId: string; chamaId: string }>({
         mutationFn: ({ fileId }) => deleteFile(fileId),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['files', variables.chamaId] });
             toast.success("File deleted successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to delete file.');
         }
     });

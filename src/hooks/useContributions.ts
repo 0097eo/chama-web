@@ -26,6 +26,12 @@ interface ContributionsApiResponse {
   };
 }
 
+interface BulkImportResponse {
+  data: {
+    createdCount: number;
+  };
+}
+
 // GET /api/contributions/chama/:chamaId
 const getChamaContributions = async (chamaId: string): Promise<ContributionsApiResponse> => {
   const response = await api.get(`/contributions/chama/${chamaId}`);
@@ -51,7 +57,7 @@ const getDefaulters = async (chamaId: string): Promise<Membership[]> => {
 };
 
 // POST /api/contributions/bulk-import/:chamaId
-const bulkImportContributions = async ({ chamaId, file }: { chamaId: string, file: File }): Promise<any> => {
+const bulkImportContributions = async ({ chamaId, file }: { chamaId: string, file: File }): Promise<BulkImportResponse> => {
     const formData = new FormData();
     formData.append("contributionsFile", file);
 
@@ -73,13 +79,13 @@ export const useGetChamaContributions = (chamaId: string) => {
 
 export const useRecordContribution = () => {
     const queryClient = useQueryClient();
-    return useMutation<Contribution, Error, ContributionData>({
+    return useMutation<Contribution, AxiosError<{ message: string }>, ContributionData>({
         mutationFn: recordContribution,
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['contributions', variables.membershipId] });
             toast.success("Contribution recorded successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || 'Failed to record contribution.');
         },
     });

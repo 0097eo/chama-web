@@ -16,6 +16,13 @@ interface ScheduleMeetingData {
     scheduledFor: string; // ISO string format
 }
 
+interface UpdateMeetingData {
+    title?: string;
+    agenda?: string;
+    location?: string;
+    scheduledFor?: string;
+}
+
 // === API Functions ===
 
 const getQrCode = async (meetingId: string): Promise<{ qrCodeDataUrl: string }> => {
@@ -51,7 +58,7 @@ const saveMeetingMinutes = async ({ meetingId, minutes }: { meetingId: string, m
     return api.post(`/meetings/${meetingId}/minutes`, { minutes });
 };
 
-const updateMeeting = async ({ meetingId, data }: { meetingId: string, data: any }) => {
+const updateMeeting = async ({ meetingId, data }: { meetingId: string, data: UpdateMeetingData }) => {
     const response = await api.put(`/meetings/${meetingId}`, data);
     return response.data.data;
 };
@@ -72,13 +79,13 @@ export const useGetChamaMeetings = (chamaId: string | null | undefined) => {
 
 export const useScheduleMeeting = () => {
     const queryClient = useQueryClient();
-    return useMutation<Meeting, AxiosError, ScheduleMeetingData>({
+    return useMutation<Meeting, AxiosError<{ message: string }>, ScheduleMeetingData>({
         mutationFn: scheduleMeeting,
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['meetings', data.chamaId] });
             toast.success("Meeting scheduled successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to schedule meeting.");
         }
     });
@@ -109,14 +116,14 @@ export const useGetMeetingById = (meetingId: string | null | undefined) => {
 
 export const useUpdateMeeting = () => {
     const queryClient = useQueryClient();
-    return useMutation<Meeting, Error, { meetingId: string, data: any }>({
+    return useMutation<Meeting, AxiosError<{ message: string }>, { meetingId: string, data: UpdateMeetingData }>({
         mutationFn: updateMeeting,
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['meeting', data.id] });
             queryClient.invalidateQueries({ queryKey: ['meetings', data.chamaId] });
             toast.success("Meeting details updated successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to update meeting.");
         }
     });
@@ -124,14 +131,14 @@ export const useUpdateMeeting = () => {
 
 export const useCancelMeeting = () => {
     const queryClient = useQueryClient();
-    return useMutation<void, Error, string>({
+    return useMutation<void, AxiosError<{ message: string }>, string>({
         mutationFn: cancelMeeting,
         onSuccess: (_, meetingId) => {
             queryClient.invalidateQueries({ queryKey: ['meeting', meetingId] });
             queryClient.invalidateQueries({ queryKey: ['meetings'] }); // Invalidate list to update status
             toast.success("Meeting has been cancelled.");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to cancel meeting.");
         }
     });
