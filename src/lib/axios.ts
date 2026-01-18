@@ -48,7 +48,7 @@ api.interceptors.response.use(
             window.location.href = '/login';
           }
         }
-      } catch (refreshError) {
+      } catch (_) {
         // Refresh failed, redirect to login
         if (typeof window !== 'undefined') {
           window.location.href = '/login';
