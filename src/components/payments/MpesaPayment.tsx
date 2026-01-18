@@ -16,8 +16,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
-  month: z.coerce.number().min(1).max(12),
-  year: z.coerce.number().min(new Date().getFullYear() - 5),
+  month: z.number().min(1).max(12),
+  year: z.number().min(new Date().getFullYear() - 5),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -27,7 +27,6 @@ export function MpesaPayment({ chama }: { chama: Chama }) {
   const recordContributionMutation = useRecordContribution();
   const initiateStkPushMutation = useInitiateStkPush();
   const [checkoutRequestId, setCheckoutRequestId] = useState<string | null>(null);
-  const [contributionId, setContributionId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -50,7 +49,6 @@ export function MpesaPayment({ chama }: { chama: Chama }) {
     }
 
     setCheckoutRequestId(null);
-    setContributionId(null);
 
     const formattedPhone = session.user.phone.startsWith('+') 
       ? session.user.phone.substring(1) 
@@ -68,7 +66,6 @@ export function MpesaPayment({ chama }: { chama: Chama }) {
     
     try {
       const newContribution = await recordContributionMutation.mutateAsync(pendingContributionData);
-      setContributionId(newContribution.id);
       
       const stkResponse = await initiateStkPushMutation.mutateAsync({
         contributionId: newContribution.id,
@@ -85,13 +82,11 @@ export function MpesaPayment({ chama }: { chama: Chama }) {
       console.error("STK Push flow failed:", error);
       // Reset state on error
       setCheckoutRequestId(null);
-      setContributionId(null);
     }
   }
 
   const handleNewPayment = () => {
     setCheckoutRequestId(null);
-    setContributionId(null);
     form.reset({
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),

@@ -20,9 +20,7 @@ const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters."),
   agenda: z.string().min(10, "Please provide a brief agenda."),
   location: z.string().min(3, "Location is required."),
-  scheduledFor: z.date({
-    required_error: "A meeting date is required.",
-  }).refine((date) => date > new Date(), {
+  scheduledFor: z.date().refine((date) => date > new Date(), {
     message: "Meeting date must be in the future.",
   }),
 });

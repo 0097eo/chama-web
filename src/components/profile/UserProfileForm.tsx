@@ -25,13 +25,13 @@ type FormValues = z.infer<typeof formSchema>;
 // Hook for the update mutation
 const useUpdateProfile = () => {
     const queryClient = useQueryClient();
-    return useMutation<User, Error, FormValues>({
+    return useMutation<User, AxiosError<{ message: string }>, FormValues>({
         mutationFn: (data) => api.put('/auth/profile', data).then(res => res.data.data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile'] });
             toast.success("Profile updated successfully!");
         },
-        onError: (error: AxiosError<{ message: string }>) => {
+        onError: (error) => {
             toast.error(error.response?.data?.message || "Failed to update profile.");
         }
     });
