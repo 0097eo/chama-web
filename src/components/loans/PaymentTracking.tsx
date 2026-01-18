@@ -18,9 +18,10 @@ import { useState } from "react";
 import { Separator } from "../ui/separator";
 
 const paymentSchema = z.object({
-    amount: z.coerce.number().positive(),
+    amount: z.number().positive(),
     paymentMethod: z.string().min(1, "Payment method is required."),
     mpesaCode: z.string().optional(),
+    paidAt: z.date(),
 });
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
@@ -32,11 +33,19 @@ function RecordPaymentForm({ loan, onSuccess }: { loan: Loan, onSuccess: () => v
             amount: loan.monthlyInstallment || 0,
             paymentMethod: "M-PESA",
             mpesaCode: "",
+            paidAt: new Date(),
         }
     });
 
     const onSubmit = (values: PaymentFormValues) => {
-        recordPaymentMutation.mutate({ loanId: loan.id, data: values }, {
+        const paymentData = {
+            amount: values.amount,
+            paymentMethod: values.paymentMethod,
+            mpesaCode: values.mpesaCode,
+            paidAt: values.paidAt.toISOString(),
+        };
+        
+        recordPaymentMutation.mutate({ loanId: loan.id, data: paymentData }, {
             onSuccess: () => {
                 form.reset();
                 onSuccess();
@@ -54,7 +63,13 @@ function RecordPaymentForm({ loan, onSuccess }: { loan: Loan, onSuccess: () => v
                         <FormItem>
                             <FormLabel>Payment Amount (KSH)</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="Enter amount paid" {...field} />
+                                <Input 
+                                    type="number" 
+                                    placeholder="Enter amount paid" 
+                                    {...field}
+                                    value={field.value || ""}
+                                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

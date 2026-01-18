@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Download, File as FileIcon, Calendar, User, Tag, HardDrive } from "lucide-react";
 import Link from "next/link";
+import { use } from "react";
 
 // Helper to format file size
 const formatBytes = (bytes: number, decimals = 2) => {
@@ -19,8 +20,8 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 
-export default function FileDetailsPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+export default function FileDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const { data: file, isLoading } = useGetFileById(id);
 
     if (isLoading) {
