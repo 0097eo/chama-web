@@ -1,6 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import axios from 'axios';
 import { User, Session } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 
@@ -15,12 +14,21 @@ export const authConfig = {
         if (!credentials?.email || !credentials.password) return null;
 
         try {
-          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-            email: credentials.email,
-            password: credentials.password,
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
           });
 
-          const authData = response.data.data;
+          if (!response.ok) return null;
+
+          const result = await response.json();
+          const authData = result.data;
           
           if (authData && authData.accessToken) {
             return {
@@ -42,12 +50,20 @@ export const authConfig = {
         token.refreshToken = user.refreshToken;
 
         try {
-
-          const profileResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
-            headers: { Authorization: `Bearer ${user.accessToken}` }
+          const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
+            headers: { 
+              'Authorization': `Bearer ${user.accessToken}`,
+              'Content-Type': 'application/json',
+            }
           });
 
-          const profile = profileResponse.data.data;
+          if (!profileResponse.ok) {
+            console.error("Failed to fetch profile:", profileResponse.status);
+            return { ...token, error: "FetchProfileError" };
+          }
+
+          const result = await profileResponse.json();
+          const profile = result.data;
 
           token.id = profile.id;
           token.firstName = profile.firstName;
